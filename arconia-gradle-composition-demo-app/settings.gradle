@@ -1,0 +1,12 @@
+pluginManagement {
+	repositories {
+		mavenLocal()
+		gradlePluginPortal()
+		mavenCentral()
+	}
+	// Local development - comment out when using published plugins
+	// includeBuild('../redis-spring-boot-gradle-convention')
+	// includeBuild('../observability-spring-boot-gradle-convention')
+}
+
+rootProject.name = 'arconia-gradle-composition-demo-app'

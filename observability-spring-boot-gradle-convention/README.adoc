@@ -1,0 +1,106 @@
+= Observability Spring Boot Gradle Convention
+
+Gradle convention plugin that configures OpenTelemetry observability for Spring Boot 4 applications using *Arconia*.
+
+== Features
+
+This plugin uses *Arconia's Micrometer-based approach* (not Java Agent):
+
+* *Adds Arconia dependencies:*
+** Arconia BOM for dependency management
+** `arconia-opentelemetry-spring-boot-starter` - Bridges Micrometer to OpenTelemetry APIs
+** `arconia-dev-services-lgtm` - LGTM stack (Loki, Grafana, Tempo, Mimir) via Testcontainers
+
+* *Zero Configuration:*
+** No Java Agent required
+** Dynamic port configuration via Spring Boot ConnectionDetails
+** Automatic OTLP endpoint setup
+** Works with both Micrometer and OpenTelemetry APIs simultaneously
+
+* *Architecture:*
+** Uses Spring Boot's native Micrometer instrumentation
+** Bridges Micrometer metrics to OpenTelemetry
+** Supports direct OpenTelemetry API usage alongside Micrometer
+** All telemetry exported via OTLP to LGTM dev service
+
+== Usage
+
+=== 1. Apply the plugin in your `build.gradle`:
+
+[source,gradle]
+----
+plugins {
+    id 'com.jimisola.demo.gradle.plugins.observability-spring-boot' version '0.1.0'
+}
+----
+
+The plugin automatically adds all required Arconia and OpenTelemetry dependencies.
+
+=== 2. Run your application:
+
+[source,bash]
+----
+./gradlew bootRun
+----
+
+The application will start with:
+
+* LGTM stack (Grafana, Loki, Tempo, Mimir) running in containers
+* Dynamic ports automatically assigned by Spring Boot
+* Metrics, logs, and traces exported to OTLP endpoint
+* Access Grafana dashboard at the URL shown in logs (e.g., \http://localhost:32846)
+
+== Configuration
+
+=== Dev Services
+
+Configure the LGTM dev service via application properties:
+
+[source,properties]
+----
+# Whether the dev service is enabled (default: true)
+arconia.dev.services.lgtm.enabled=true
+
+# Container image to use
+arconia.dev.services.lgtm.image-name=grafana/otel-lgtm:0.14.0
+
+# Whether to reuse containers between runs
+arconia.dev.services.lgtm.reuse=false
+
+# Custom port mappings (optional - dynamic by default)
+# arconia.dev.services.lgtm.ports.grafana=3000
+# arconia.dev.services.lgtm.ports.otlp=4318
+----
+
+=== OpenTelemetry Configuration
+
+Arconia automatically configures sensible defaults. You can override via properties:
+
+[source,properties]
+----
+# Service name (defaults to application name)
+otel.service.name=my-service
+
+# Resource attributes
+otel.resource.attributes.deployment.environment=dev
+
+# Enable/disable exporters
+management.otlp.metrics.export.enabled=true
+management.otlp.tracing.export.enabled=true
+management.otlp.logging.export.enabled=true
+----
+
+== Scopes
+
+* *implementation*: Arconia OpenTelemetry starter (included in production JAR)
+* *testAndDevelopmentOnly*: LGTM dev services (excluded from production JAR)
+
+== Using OpenTelemetry APIs
+
+The plugin makes both Micrometer and OpenTelemetry APIs available. You can inject `Meter` from OpenTelemetry to create custom metrics alongside Spring Boot's automatic Micrometer instrumentation.
+
+== References
+
+* link:https://docs.arconia.io/arconia/latest/opentelemetry/[Arconia Documentation]
+* link:https://opentelemetry.io/docs/languages/java/[OpenTelemetry Java]
+* link:https://docs.spring.io/spring-boot/reference/actuator/observability.html[Spring Boot Observability]

@@ -1,0 +1,83 @@
+plugins {
+	id 'java'
+	id 'jvm-test-suite'
+	alias libs.plugins.spring.boot
+	alias libs.plugins.spring.dependency.management
+	id 'com.jimisola.java.gradle.redis-spring-boot' version '0.2.0'
+	id 'com.jimisola.java.gradle.observability-spring-boot' version '0.2.0'
+}
+
+group = 'com.jimisola.demo.arconia'
+version = '0.1.0'
+description = 'Demo project for Spring Boot showing Gradle composition with Arconia Dev Services for Redis and Observability'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+testing {
+	suites {
+		test {
+			useJUnitJupiter()
+		}
+
+		integrationTest(JvmTestSuite) {
+			dependencies {
+				implementation project()
+				runtimeOnly project()
+				implementation libs.spring.boot.starter.test
+				implementation libs.spring.boot.starter.webmvc.test
+				implementation libs.spring.boot.starter.jackson
+			}
+
+			targets {
+				all {
+					
+					testTask.configure {
+						shouldRunAfter(test)
+					}
+				}
+			}
+		}
+	}
+}
+
+tasks.named('check') {
+	dependsOn(testing.suites.integrationTest)
+}
+
+configurations {
+	integrationTestImplementation.extendsFrom implementation, testImplementation
+	integrationTestRuntimeOnly.extendsFrom runtimeOnly, testRuntimeOnly
+}
+
+configurations.all {
+	resolutionStrategy {
+		// Force OpenTelemetry 1.57.0 to fix ExemplarFilter missing class issue
+		// Micrometer 1.6.1 brings in older 1.55.0 versions
+		eachDependency { details ->
+			if (details.requested.group == 'io.opentelemetry' && details.requested.version == '1.55.0') {
+				details.useVersion '1.57.0'
+				details.because 'Arconia 0.21.0 requires OpenTelemetry 1.57.0'
+			}
+		}
+	}
+}
+
+dependencies {
+	implementation libs.spring.boot.starter.webmvc
+	implementation libs.spring.boot.starter.jackson
+	implementation libs.spring.boot.starter.validation
+	implementation libs.springdoc.openapi.starter.webmvc.ui
+	developmentOnly libs.spring.boot.devtools
+	testImplementation libs.spring.boot.starter.test
+	testImplementation libs.spring.boot.starter.webmvc.test
+	testImplementation libs.spring.boot.starter.jackson
+	testRuntimeOnly libs.junit.platform.launcher
+}

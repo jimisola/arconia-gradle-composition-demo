@@ -1,0 +1,54 @@
+= Redis Convention Plugin
+
+This Gradle convention plugin provides Redis dependencies for Spring Boot projects.
+
+== What it does
+
+Applies the following dependencies to your project:
+
+=== Implementation (Runtime)
+* `spring-boot-starter-data-redis` - Spring Data Redis support
+
+=== Test and Development Only
+* `arconia-dev-services-redis` - Arconia Redis Dev Service
+* `spring-boot-testcontainers` - Spring Boot Testcontainers integration
+* `testcontainers` - Testcontainers core
+
+=== Test
+* `testcontainers-redis` - Redis Testcontainers module
+
+== Usage
+
+=== 1. Apply the plugin in your build.gradle
+
+[source,gradle]
+----
+plugins {
+    id 'com.jimisola.demo.gradle.plugins.redis-spring-boot' version '0.1.0'
+}
+----
+
+The plugin automatically adds all required Redis and Arconia dependencies.
+
+== Dev Services
+
+The plugin uses *Arconia Dev Services* for Redis, which provides zero-configuration Redis instances during development and testing using Testcontainers and Spring Boot Dev Services.
+
+=== Configuration
+
+You can configure the Redis Dev Service via application properties:
+
+[source,properties]
+----
+# Whether the dev service is enabled (default: true)
+arconia.dev.services.redis.enabled=true
+
+# Container image to use (default: redis:8.4-alpine)
+arconia.dev.services.redis.image-name=redis:8.4-alpine
+
+# Environment variables to set in the container
+arconia.dev.services.redis.environment.REDIS_PASSWORD=mypassword
+
+# When the dev service is shared across applications (default: never)
+arconia.dev.services.redis.shared=never
+----

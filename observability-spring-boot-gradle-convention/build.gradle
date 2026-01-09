@@ -1,0 +1,26 @@
+plugins {
+    id 'java-gradle-plugin'
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = 'com.jimisola.demo.gradle.plugins'
+version = '0.2.0'
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-gradle-plugin:4.0.1'
+}
+
+gradlePlugin {
+    plugins {
+        observabilityConvention {
+            id = 'com.jimisola.java.gradle.observability-spring-boot'
+            implementationClass = 'com.jimisola.demo.gradle.plugins.observability.ObservabilityConventionPlugin'
+        }
+    }
+}

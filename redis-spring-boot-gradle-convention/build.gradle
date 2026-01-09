@@ -1,0 +1,26 @@
+plugins {
+    id 'java-gradle-plugin'
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = 'com.jimisola.demo.gradle.plugins'
+version = '0.2.0'
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-gradle-plugin:4.0.1'
+}
+
+gradlePlugin {
+    plugins {
+        redisConvention {
+            id = 'com.jimisola.java.gradle.redis-spring-boot'
+            implementationClass = 'com.jimisola.demo.gradle.plugins.redis.RedisConventionPlugin'
+        }
+    }
+}

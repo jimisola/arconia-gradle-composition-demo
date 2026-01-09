@@ -1,0 +1,212 @@
+= Arconia Dev Services Gradle Composition Demo
+:toc:
+:toc-placement!:
+:sectnums:
+
+A demonstration project showcasing Spring Boot with Gradle convention plugins for automatic Redis and observability (LGTM stack) integration using Arconia Dev Services.
+
+toc::[]
+
+== TLDR: Quick Start
+
+Want to see it running immediately? Just use the startup script:
+
+[source,bash]
+----
+./run.sh
+----
+
+This script automatically:
+
+. Builds and publishes both convention plugins to mavenLocal
+. Runs unit tests
+. Runs integration tests (that start Redis and LGTM stack via Arconia Dev Services)
+. Starts the application with all infrastructure (Redis + LGTM stack)
+
+Watch the console output for the Grafana URL and also visit `http://localhost:8080/swagger-ui.html` to access the API.
+
+== What Does This Demo Do?
+
+This project demonstrates:
+
+* **Gradle Convention Plugins**: Two custom plugins that automatically configure Redis and observability (OpenTelemetry + LGTM stack)
+* **Arconia Dev Services**: Automatic Testcontainers-based infrastructure setup during development
+* **Simple REST API**: Basic key-value storage using Redis
+* **Full Observability Stack**: Metrics, traces, and logs exported to Loki, Grafana, Tempo, and Mimir (LGTM)
+
+The application provides a simple REST API for Redis key-value operations with automatic observability instrumentation.
+
+== The Composition Use Case
+
+Why combine Spring Boot starters with matching Arconia dev-services in a single Gradle convention plugin?
+
+Traditional approaches require developers to manage three separate concerns:
+
+1. **Runtime dependencies** (e.g., `spring-boot-starter-data-redis`)
+2. **Development/test infrastructure** (e.g., Testcontainers Redis or Arconia dev-services)
+3. **Configuration** (environment variables, connection properties, etc.)
+
+This creates maintenance overhead and potential inconsistencies across projects. Each project must configure all three layers independently.
+
+=== Composition Over Inheritance
+
+The convention plugin pattern demonstrated here **composes** these concerns into a single, reusable component:
+
+* **One plugin** = Runtime dependencies + Dev services + Configuration
+* **Apply once** = Get everything needed for Redis (or observability) in development, test, and production
+* **Compose freely** = Combine multiple plugins without inheritance hierarchies
+
+For example, the `redis-spring-boot-gradle-convention` plugin merges:
+
+* `spring-boot-starter-data-redis` (runtime dependency)
+* `arconia-redis-dev-service` (Testcontainers-based dev infrastructure)
+* `testcontainers-redis` (test infrastructure)
+* All necessary dependency scopes (`implementation`, `testAndDevelopmentOnly`, etc.)
+
+When you apply this plugin, you get a complete, ready-to-use Redis integration. Apply multiple convention plugins to **compose** your application's capabilities.
+
+NOTE: **Maven Context**: Maven's static, declarative build model and inheritance-based approach (single parent POM limitation) made composition challenging. However, composition was achievable through 3rd-party tools like https://github.com/repaint-io/maven-tiles[Maven Tiles] (which I have production experience with) and from Maven 4.1+ with core https://maven.apache.org/guides/mini/guide-mixins.html[Mixins functionality]. Maven's static nature offers straightforward composition, but Gradle's dynamic model provides more flexibility at the cost of additional complexity. This demo explores implementing similar composition patterns in Gradle's environment.
+
+Typical composition scenarios that benefit from mixins/convention plugins:
+
+* **Language/Platform**: Java version configuration (Java 17, 21, 25)
+* **Framework Base**: Spring Boot application setup, Quarkus, Micronaut
+* **Infrastructure Integration**: Redis, PostgreSQL, RabbitMQ, Vault, Camel
+* **Security**: OAuth2 client/resource server, authentication patterns
+* **API**: OpenAPI/AsyncAPI documentation
+* **Observability**: Metrics, tracing, logging (LGTM stack, OpenTelemetry)
+* **Quality/Testing**: Test frameworks, code linting, enforcer rules, test coverage
+* **Build/Environment**: Version management, development environment setup, common configurations
+
+== Prerequisites
+
+* Java 25 (configured via Gradle toolchain)
+* Docker/Podman (for Testcontainers/Dev Services)
+
+=== What This Demo Uses
+
+* **Java**: 25
+* **Spring Boot**: 4.0.1
+* **Arconia**: 0.21.0
+* **Gradle**: 9.2.1
+* **Testcontainers**: Managed by Arconia Dev Services
+
+== Manual Build Steps
+
+If you prefer to run steps individually:
+
+=== 1. Build Convention Plugins
+
+Build and publish the Gradle convention plugins to your local Maven repository:
+
+[source,bash]
+----
+# Build and publish Redis convention plugin
+cd redis-spring-boot-gradle-convention
+./gradlew clean build publishToMavenLocal
+
+# Build and publish observability convention plugin
+cd ../observability-spring-boot-gradle-convention
+./gradlew clean build publishToMavenLocal
+----
+
+=== 2. Run Tests and Application
+
+[source,bash]
+----
+cd ../arconia-gradle-composition-demo-app
+
+# Run tests
+./gradlew check
+
+# Start the application
+./gradlew bootRun
+----
+
+The application will automatically start Redis and the LGTM stack (Loki, Grafana, Tempo, Mimir) via Testcontainers.
+
+== Accessing the Application
+
+=== Swagger UI (OpenAPI Documentation)
+
+Once the application is running, access the interactive API documentation:
+
+[source]
+----
+http://localhost:8080/swagger-ui.html
+----
+
+
+== Finding the Grafana URL
+
+The Grafana dashboard URL is automatically printed in the console when the application starts.
+
+The port is dynamically assigned by Testcontainers. 
+
+=== Method 1: Console or application Logs
+
+[source,bash]
+----
+Access to the Grafana dashboard: http://localhost:33158
+----
+
+=== Method 2: Docker Inspection
+
+[source,bash]
+----
+# List running containers
+docker ps
+
+# Find the Grafana container and note its port mapping
+# It will show something like: 0.0.0.0:xxxxx->3000/tcp
+----
+
+== Gradle Composition Complexity
+
+Gradle convention plugins provide powerful composition capabilities, but the dynamic build model introduces complexity compared to Maven's static approach.
+
+=== Key Complexity Areas
+
+* **Dynamic Configuration**: Plugins apply logic at configuration time
+* **Version Catalog Ownership**: Published plugins cannot access their own version catalog (used during plugin build). They can access the consuming project's catalog via `VersionCatalogsExtension`, but this requires the consumer to define all needed versions. This creates a design choice: hardcode versions for self-contained plugins, or delegate version management to consumers (see https://discuss.gradle.org/t/version-catalog-access-from-plugin/43629/4[this discussion])
+* **Dependency Update Tooling**: Using `libs.versions.toml` or similar formats that are natively supported by Renovate and Dependabot (without custom regex matchers) is essential for automated dependency updates. Hardcoded versions in plugin source files require custom configurations for these tools.
+* **Multiple Approaches**: Hardcode versions in plugins, use the consuming project's catalog, dependency management plugins, or composite builds - each with tradeoffs
+* **More Moving Parts**: Settings plugins, build plugins, composite builds, and publishing add layers of complexity
+
+This demo shows one approach: convention plugins with hardcoded versions (like Arconia `0.21.0`), published to `mavenLocal()`. This makes plugins self-contained - they control their own dependency versions rather than requiring the consumer to manage them. Alternative production approaches:
+
+* Use the consuming project's version catalog (delegates version management to consumers)
+* Shared dependency management plugins
+* Published plugins with proper versioning
+* Composite builds for local development
+
+The tradeoff: Gradle's flexibility enables powerful patterns but requires architectural decisions about version ownership and plugin distribution that Maven's straightforward approach avoids.
+
+== Convention Plugins
+
+This project uses two custom Gradle convention plugins:
+
+* Redis Plugin
+* Observability Plugin
+
+See their respective README files for details.
+
+== Troubleshooting
+
+=== "Plugin not found" Error
+
+Make sure you've published the convention plugins to `mavenLocal()`:
+
+[source,bash]
+----
+cd ../redis-spring-boot-gradle-convention && ./gradlew publishToMavenLocal
+cd ../observability-spring-boot-gradle-convention && ./gradlew publishToMavenLocal
+----
+
+== Learn More
+
+* https://docs.gradle.org/current/userguide/custom_plugins.html[Gradle Convention Plugins]
+* https://arconia.dev[Arconia Documentation]
+* https://www.testcontainers.org/[Testcontainers]
+* https://opentelemetry.io/[OpenTelemetry]
+* https://spring.io/projects/spring-boot[Spring Boot]
