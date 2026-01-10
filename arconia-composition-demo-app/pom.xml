@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.2.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.0.1</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.jimisola.demo.arconia</groupId>
+    <artifactId>arconia-composition-demo-app</artifactId>
+    <version>0.1.0</version>
+    <packaging>jar</packaging>
+
+    <name>Arconia Composition Demo App</name>
+    <description>Demo project for Spring Boot showing Maven Mixins composition with Arconia Dev Services for Redis and Observability</description>
+
+    <properties>
+        <java.version>25</java.version>
+        <!-- Override Spring Boot version from mixins (they use 4.0.0) -->
+        <spring-boot.version>4.0.1</spring-boot.version>
+        <!-- Force OpenTelemetry 1.57.0 to fix ExemplarFilter missing class issue -->
+        <!-- Micrometer 1.6.1 brings in older 1.55.0 versions -->
+        <opentelemetry.version>1.57.0</opentelemetry.version>
+        <!-- Maven 4 consumer POM handling for mixins: -->
+        <!-- preserve.model.version=true → keep modelVersion 4.2.0, requires Maven 4 consumers (used for apps) -->
+        <!-- maven.consumer.pom.flatten=true → flatten to Maven 3 compatible POM (use for published libraries)
+             see: https://maven.apache.org/whatsnewinmaven4.html#consumer-pom -->
+        <preserve.model.version>true</preserve.model.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Force OpenTelemetry version for Arconia 0.21.0 compatibility -->
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom</artifactId>
+                <version>${opentelemetry.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <mixins>
+        <mixin>
+            <groupId>com.jimisola.demo.maven.mixins</groupId>
+            <artifactId>redis-spring-boot-maven-mixin</artifactId>
+            <version>0.2.0</version>
+        </mixin>
+        <mixin>
+            <groupId>com.jimisola.demo.maven.mixins</groupId>
+            <artifactId>observability-spring-boot-maven-mixin</artifactId>
+            <version>0.2.0</version>
+        </mixin>
+    </mixins>
+
+    <dependencies>
+        <!-- Web -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- OpenAPI Documentation -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.8.4</version>
+        </dependency>
+
+        <!-- Development Tools -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Test Dependencies -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <release>${java.version}</release>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

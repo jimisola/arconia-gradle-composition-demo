@@ -1,0 +1,38 @@
+= Redis Spring Boot Maven Mixin
+
+Maven Mixin for Redis and Arconia dev services configuration.
+
+== What it does
+
+Adds the following dependencies to your project:
+
+=== Runtime Dependencies
+* `spring-boot-starter-data-redis` - Spring Data Redis support
+
+=== Test Dependencies
+* `arconia-dev-services-redis` - Arconia Redis Dev Service (Testcontainers-based)
+* `spring-boot-testcontainers` - Spring Boot Testcontainers integration
+* `testcontainers` - Testcontainers core
+* `testcontainers-redis` - Redis Testcontainers module
+
+=== Dependency Management
+* `spring-boot-dependencies` - Spring Boot BOM
+
+== Usage
+
+Add this mixin to your `pom.xml`:
+
+[source,xml]
+----
+<project>
+    <mixins>
+        <mixin>
+            <groupId>com.jimisola.demo.maven.mixins</groupId>
+            <artifactId>redis-spring-boot-maven-mixin</artifactId>
+            <version>0.2.0</version>
+        </mixin>
+    </mixins>
+</project>
+----
+
+The mixin automatically adds all required Redis and Arconia dependencies.

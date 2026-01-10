@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.jimisola.demo.maven.mixins</groupId>
+    <artifactId>observability-spring-boot-maven-mixin</artifactId>
+    <version>0.2.0</version>
+    <packaging>pom</packaging>
+
+    <name>Observability Spring Boot Maven Mixin</name>
+    <description>Maven Mixin for Arconia observability configuration (OpenTelemetry + LGTM stack)</description>
+
+    <properties>
+        <arconia.version>0.21.0</arconia.version>
+        <!-- Spring Boot version should be set by consuming project -->
+        <spring-boot.version>4.0.0</spring-boot.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot BOM - consuming project should import this with their desired version -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Arconia BOM for dependency management -->
+            <dependency>
+                <groupId>io.arconia</groupId>
+                <artifactId>arconia-bom</artifactId>
+                <version>${arconia.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- OpenTelemetry Spring Boot Starter (Micrometer-based, no Java Agent) -->
+        <dependency>
+            <groupId>io.arconia</groupId>
+            <artifactId>arconia-opentelemetry-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- LGTM Dev Services (Loki, Grafana, Tempo, Mimir) -->
+        <!-- Spring Boot 4 excludes optional dependencies from packaged artifacts -->
+        <dependency>
+            <groupId>io.arconia</groupId>
+            <artifactId>arconia-dev-services-lgtm</artifactId>
+            <version>${arconia.version}</version>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+</project>

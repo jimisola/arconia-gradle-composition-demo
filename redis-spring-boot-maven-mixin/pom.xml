@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.jimisola.demo.maven.mixins</groupId>
+    <artifactId>redis-spring-boot-maven-mixin</artifactId>
+    <version>0.2.0</version>
+    <packaging>pom</packaging>
+
+    <name>Redis Spring Boot Maven Mixin</name>
+    <description>Maven Mixin for Redis and Arconia dev services configuration</description>
+
+    <properties>
+        <arconia.version>0.21.0</arconia.version>
+        <testcontainers-redis.version>2.2.2</testcontainers-redis.version>
+        <!-- Spring Boot version should be set by consuming project -->
+        <spring-boot.version>4.0.0</spring-boot.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot BOM - consuming project should import this with their desired version -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- Runtime dependency -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- Dev Services (development and test, not packaged) -->
+        <!-- Spring Boot 4 excludes optional dependencies from packaged artifacts -->
+        <dependency>
+            <groupId>io.arconia</groupId>
+            <artifactId>arconia-dev-services-redis</artifactId>
+            <version>${arconia.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Testcontainers support -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>com.redis</groupId>
+            <artifactId>testcontainers-redis</artifactId>
+            <version>${testcontainers-redis.version}</version>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+</project>

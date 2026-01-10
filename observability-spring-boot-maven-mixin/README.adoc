@@ -1,0 +1,43 @@
+= Observability Spring Boot Maven Mixin
+
+Maven Mixin for Arconia observability configuration (OpenTelemetry + LGTM stack).
+
+== Features
+
+This mixin uses *Arconia's Micrometer-based approach* (not Java Agent):
+
+* *Adds Arconia dependencies:*
+** Arconia BOM for dependency management
+** `arconia-opentelemetry-spring-boot-starter` - Bridges Micrometer to OpenTelemetry APIs
+** `arconia-dev-services-lgtm` - LGTM stack (Loki, Grafana, Tempo, Mimir) via Testcontainers
+
+* *Zero Configuration:*
+** No Java Agent required
+** Dynamic port configuration via Spring Boot ConnectionDetails
+** Automatic OTLP endpoint setup
+** Works with both Micrometer and OpenTelemetry APIs simultaneously
+
+* *Architecture:*
+** Uses Spring Boot's native Micrometer instrumentation
+** Bridges Micrometer metrics to OpenTelemetry
+** Supports direct OpenTelemetry API usage alongside Micrometer
+** All telemetry exported via OTLP to LGTM dev service
+
+== Usage
+
+Add this mixin to your `pom.xml`:
+
+[source,xml]
+----
+<project>
+    <mixins>
+        <mixin>
+            <groupId>com.jimisola.demo.maven.mixins</groupId>
+            <artifactId>observability-spring-boot-maven-mixin</artifactId>
+            <version>0.2.0</version>
+        </mixin>
+    </mixins>
+</project>
+----
+
+The mixin automatically adds all required Arconia and OpenTelemetry dependencies.

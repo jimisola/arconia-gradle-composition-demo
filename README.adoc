@@ -3,33 +3,41 @@
 :toc-placement!:
 :sectnums:
 
-A demonstration project showcasing Spring Boot composition patterns for automatic Redis and observability (LGTM stack) integration using Arconia Dev Services. Includes both Gradle convention plugins and Maven Mixins implementations.
+A demonstration project showcasing Spring Boot composition patterns for automatic Redis and observability (LGTM stack) integration using Arconia Dev Services.
+
+This demo implements the **same composition pattern** using both:
+
+* **Gradle Convention Plugins** - Dynamic, programmatic composition
+* **Maven Mixins (Maven 4.1)** - Static, declarative composition
 
 toc::[]
 
 == TLDR: Quick Start
 
-Want to see it running immediately? Just use the startup script:
+Want to see it running immediately? Choose your build tool:
 
+**Gradle:**
 [source,bash]
 ----
 ./run-with-gradle.sh
 ----
 
-This script automatically:
+**Maven:**
+[source,bash]
+----
+./run-with-maven.sh
+----
 
-. Builds and publishes both convention plugins to mavenLocal
-. Runs unit tests
-. Runs integration tests (that start Redis and LGTM stack via Arconia Dev Services)
-. Starts the application with all infrastructure (Redis + LGTM stack)
+Both scripts automatically build the mixins/plugins, run tests, and start the application with all infrastructure (Redis + LGTM stack).
 
-Watch the console output for the Grafana URL and also visit `http://localhost:8080/swagger-ui.html` to access the API.
+Watch the console output for the Grafana URL and visit `http://localhost:8080/swagger-ui.html` to access the API.
 
 == What Does This Demo Do?
 
-This project demonstrates:
+This project demonstrates composition patterns in both build systems:
 
 * **Gradle Convention Plugins**: Two custom plugins that automatically configure Redis and observability (OpenTelemetry + LGTM stack)
+* **Maven Mixins (Maven 4.1)**: Two mixins providing the same Redis and observability configuration
 * **Arconia Dev Services**: Automatic Testcontainers-based infrastructure setup during development
 * **Simple REST API**: Basic key-value storage using Redis
 * **Full Observability Stack**: Metrics, traces, and logs exported to Loki, Grafana, Tempo, and Mimir (LGTM)
@@ -38,7 +46,7 @@ The application provides a simple REST API for Redis key-value operations with a
 
 == The Composition Use Case
 
-Why combine Spring Boot starters with matching Arconia dev-services in a single Gradle convention plugin?
+Why combine Spring Boot starters with matching Arconia dev-services in a single reusable component?
 
 Traditional approaches require developers to manage three separate concerns:
 
@@ -65,9 +73,42 @@ For example, the `redis-spring-boot-gradle-convention` plugin merges:
 
 When you apply this plugin, you get a complete, ready-to-use Redis integration. Apply multiple convention plugins to **compose** your application's capabilities.
 
-NOTE: **Maven Context**: Maven's static, declarative build model and inheritance-based approach (single parent POM limitation) made composition challenging. However, composition was achievable through 3rd-party tools like https://github.com/repaint-io/maven-tiles[Maven Tiles] (which I have production experience with) and from Maven 4.1+ with core https://maven.apache.org/guides/mini/guide-mixins.html[Mixins functionality]. Maven's static nature offers straightforward composition, but Gradle's dynamic model provides more flexibility at the cost of additional complexity. This demo explores implementing similar composition patterns in Gradle's environment.
+=== Maven vs Gradle Composition: Practical Experience
 
-Typical composition scenarios that benefit from mixins/convention plugins:
+This demo shows one approach: convention plugins with hardcoded versions (like Arconia `0.21.0`), published to `mavenLocal()`. This makes plugins self-contained - they control their own dependency versions rather than requiring the consumer to manage them. Alternative production approaches:
+
+* Use the consuming project's version catalog (delegates version management to consumers)
+* Shared dependency management plugins
+* Published plugins with proper versioning
+* Composite builds for local development
+
+Maven's static nature and https://github.com/repaint-io/maven-tiles[Maven Tiles] (3rd-party, production-proven) made composition straightforward. Maven 4.1's core https://maven.apache.org/guides/mini/guide-mixins.html[Mixins functionality] brings this pattern into the official Maven toolchain.
+
+**The tradeoff**: Gradle's dynamic model offers more flexibility and power for complex scenarios, but for straightforward dependency composition, Maven Mixins are considerably simpler to implement and maintain in my opinion.
+
+==== Maven
+Maven Mixins (Maven 4.1+) offer a more straightforward approach to composition:
+
+* **Static, declarative files**: Mixins are simple POM files - no coding required
+* **Easy version management**: Dependencies in mixins are plain XML that Dependabot and Renovate natively understand
+* **Simple to maintain**: Standard Maven dependency declarations
+
+
+However, Maven has no equivalent to Gradle's `testAndDevelopmentOnly` scope—neither in Maven 3 nor Maven 4. **Maven scopes remain artifact-oriented, not environment-oriented.** You must choose between `test` scope (requires `useTestClasspath=true` which includes *all* test dependencies during spring-boot:run) or `runtime` scope (gets packaged in the jar). This is an intentional design decision: Maven scopes define artifact transitivity, while Gradle configurations define consumption graphs.
+
+==== Gradle
+
+**Gradle Convention Plugins** provide more flexibility but at a cost:
+
+* **Requires coding**: Plugins are Groovy/Kotlin code that applies dependencies programmatically - requires more knowledge, coding skills, and more files
+* **Cannot use `libs.versions.toml`**: Published plugins cannot access their own version catalog. They can access the consuming project's catalog via `VersionCatalogsExtension`, but this requires consumers to define all versions. The practical choices: (1) hardcode versions in plugin code (requires custom Renovate/Dependabot regex matchers), (2) delegate version management to consumers (more setup), or (3) less common approaches like shared BOM artifacts, version management plugins, or plugin extensions with version configuration. The fundamental limitation: plugins are code, not data files, so dependency update tools can't natively parse them like Maven's XML.
+* **Dynamic but complex**: More architectural decisions about version ownership, dependency management strategy, plugin distribution (`mavenLocal()`, composite builds, published repositories), and update automation configuration
+
+However, Gradle offers a unique advantage with its **`testAndDevelopmentOnly` scope**. It provides a dedicated dependency configuration that makes dependencies available during both test execution *and* development mode (bootRun), but excludes them from the packaged artifact. This reflects Gradle's environment-oriented configuration model, where custom consumption graphs can be defined for different contexts (testing, development, production).
+
+
+==== Composition use cases
+Typical composition use cases that benefit from mixins/convention plugins:
 
 * **Language/Platform**: Java version configuration (Java 17, 21, 25)
 * **Framework Base**: Spring Boot application setup, Quarkus, Micronaut
@@ -78,22 +119,88 @@ Typical composition scenarios that benefit from mixins/convention plugins:
 * **Quality/Testing**: Test frameworks, code linting, enforcer rules, test coverage
 * **Build/Environment**: Version management, development environment setup, common configurations
 
+== Known Limitations
+
+Both build systems have architectural limitations when it comes to composition patterns:
+
+=== Maven: No Development-Time Dependency Scope
+
+Maven lacks an equivalent to Gradle's `testAndDevelopmentOnly` scope. This creates a challenge for dev-time dependencies (like Testcontainers for dev services) that should be:
+
+* ✅ Available during test execution
+* ✅ Available during local development (`spring-boot:run`)
+* ❌ **NOT** packaged in production artifacts
+
+**Spring Boot 4 Solution:** Declare dependencies with `<optional>true</optional>` in the mixins. Spring Boot 4 will automatically exclude optional dependencies when packaging the application, while keeping them available during development (`spring-boot:run`) and tests. This provides the cleanest Maven equivalent to Gradle's `testAndDevelopmentOnly`.
+
+**Legacy workaround (Spring Boot 3.x):** Use `test` scope + configure Spring Boot Maven plugin with `<useTestClasspath>true</useTestClasspath>`. This works but includes **all** test dependencies during development, not just the ones from mixins.
+
+**Profile-based alternative:** You could use profiles to activate dev dependencies, but this requires agreement on profile names across teams/organizations and doesn't compose as cleanly—consumers must remember to activate the correct profiles (e.g., `mvn -Pdev spring-boot:run`), defeating the purpose of simple, reusable mixins.
+
+**Root cause:** Maven scopes are artifact-oriented (define transitivity), not environment-oriented (define consumption contexts). This is an intentional design decision that won't change in Maven 4 or future versions. Spring Boot 4's improved handling of optional dependencies bridges this gap for Spring Boot applications.
+
+=== Gradle: Version Management Complexity
+
+Gradle convention plugins cannot use `libs.versions.toml` for their own dependency versions when published. Plugins are code, not data files, so dependency update tools (Renovate, Dependabot) cannot natively parse them.
+
+**The workaround options:**
+
+1. **Hardcode versions in plugin code** (used in this demo) - requires custom Renovate/Dependabot regex matchers
+2. **Delegate to consumer's version catalog** - more setup for consumers
+3. **Shared BOM artifacts** - additional infrastructure
+4. **Version management plugins** - additional complexity
+
+**Root cause:** Published plugins execute in a separate build phase and cannot access their own build resources. The consuming project's version catalog can be accessed via `VersionCatalogsExtension`, but this requires consumers to define all versions.
+
 == Prerequisites
 
-* Java 25 (configured via Gradle toolchain)
+* Java 25 (configured via toolchain)
 * Docker/Podman (for Testcontainers/Dev Services)
+* Gradle 9.2.1 (wrapper included) - for Gradle demo
+* Maven 4.1.0-SNAPSHOT (wrapper included) - for Maven demo
 
 === What This Demo Uses
 
 * **Java**: 25
-* **Spring Boot**: 4.0.1
+* **Spring Boot**: 4.0.1 (overridable in consuming project)
 * **Arconia**: 0.21.0
 * **Gradle**: 9.2.1
+* **Maven**: 4.1.0-SNAPSHOT
 * **Testcontainers**: Managed by Arconia Dev Services
 
-== Manual Build Steps
+== Quick Start with Maven Mixins
 
-If you prefer to run steps individually:
+=== 1. Build and Install Mixins
+
+[source,bash]
+----
+# Build and install Redis mixin
+cd redis-spring-boot-maven-mixin
+./mvnw clean install
+
+# Build and install Observability mixin
+cd ../observability-spring-boot-maven-mixin
+./mvnw clean install
+----
+
+=== 2. Run Tests and Application
+
+[source,bash]
+----
+cd ../arconia-composition-demo-app
+
+# Run tests
+./mvnw test
+
+# Start the application
+./mvnw spring-boot:run
+----
+
+The application automatically starts Redis and the LGTM stack via Testcontainers.
+
+== Quick Start with Gradle Convention Plugins
+
+== Quick Start with Gradle Convention Plugins
 
 === 1. Build Convention Plugins
 
@@ -161,33 +268,19 @@ docker ps
 # It will show something like: 0.0.0.0:xxxxx->3000/tcp
 ----
 
-== Gradle Composition Complexity
+== Composition Components
 
-Gradle convention plugins provide powerful composition capabilities, but the dynamic build model introduces complexity compared to Maven's static approach.
+This project includes two sets of composition components:
 
-=== Key Complexity Areas
+=== Gradle Convention Plugins
 
-* **Dynamic Configuration**: Plugins apply logic at configuration time
-* **Version Catalog Ownership**: Published plugins cannot access their own version catalog (used during plugin build). They can access the consuming project's catalog via `VersionCatalogsExtension`, but this requires the consumer to define all needed versions. This creates a design choice: hardcode versions for self-contained plugins, or delegate version management to consumers (see https://discuss.gradle.org/t/version-catalog-access-from-plugin/43629/4[this discussion])
-* **Dependency Update Tooling**: Using `libs.versions.toml` or similar formats that are natively supported by Renovate and Dependabot (without custom regex matchers) is essential for automated dependency updates. Hardcoded versions in plugin source files require custom configurations for these tools.
-* **Multiple Approaches**: Hardcode versions in plugins, use the consuming project's catalog, dependency management plugins, or composite builds - each with tradeoffs
-* **More Moving Parts**: Settings plugins, build plugins, composite builds, and publishing add layers of complexity
+* **Redis Plugin** (`com.jimisola.java.gradle.redis-spring-boot`)
+* **Observability Plugin** (`com.jimisola.java.gradle.observability-spring-boot`)
 
-This demo shows one approach: convention plugins with hardcoded versions (like Arconia `0.21.0`), published to `mavenLocal()`. This makes plugins self-contained - they control their own dependency versions rather than requiring the consumer to manage them. Alternative production approaches:
+=== Maven Mixins
 
-* Use the consuming project's version catalog (delegates version management to consumers)
-* Shared dependency management plugins
-* Published plugins with proper versioning
-* Composite builds for local development
-
-The tradeoff: Gradle's flexibility enables powerful patterns but requires architectural decisions about version ownership and plugin distribution that Maven's straightforward approach avoids.
-
-== Convention Plugins
-
-This project uses two custom Gradle convention plugins:
-
-* Redis Plugin
-* Observability Plugin
+* **Redis Mixin** (`com.jimisola.demo.maven.mixins:redis-spring-boot-maven-mixin`)
+* **Observability Mixin** (`com.jimisola.demo.maven.mixins:observability-spring-boot-maven-mixin`)
 
 See their respective README files for details.
 
