@@ -1,9 +1,9 @@
-= Arconia Dev Services Gradle Composition Demo
+= Arconia Dev Services Composition Demo
 :toc:
 :toc-placement!:
 :sectnums:
 
-A demonstration project showcasing Spring Boot with Gradle convention plugins for automatic Redis and observability (LGTM stack) integration using Arconia Dev Services.
+A demonstration project showcasing Spring Boot composition patterns for automatic Redis and observability (LGTM stack) integration using Arconia Dev Services. Includes both Gradle convention plugins and Maven Mixins implementations.
 
 toc::[]
 
@@ -13,7 +13,7 @@ Want to see it running immediately? Just use the startup script:
 
 [source,bash]
 ----
-./run.sh
+./run-with-gradle.sh
 ----
 
 This script automatically:
@@ -114,7 +114,7 @@ cd ../observability-spring-boot-gradle-convention
 
 [source,bash]
 ----
-cd ../arconia-gradle-composition-demo-app
+cd ../arconia-composition-demo-app
 
 # Run tests
 ./gradlew check

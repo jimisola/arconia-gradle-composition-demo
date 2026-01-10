@@ -12,7 +12,7 @@ echo "📦 Building Observability convention plugin..."
 (cd observability-spring-boot-gradle-convention && ./gradlew clean publishToMavenLocal -q)
 echo "✅ Observability plugin published locally"
 
-cd arconia-gradle-composition-demo-app
+cd arconia-composition-demo-app
 
 echo ""
 echo "🧪 Running unit tests..."

@@ -9,4 +9,4 @@ pluginManagement {
 	// includeBuild('../observability-spring-boot-gradle-convention')
 }
 
-rootProject.name = 'arconia-gradle-composition-demo-app'
+rootProject.name = 'arconia-composition-demo-app'
